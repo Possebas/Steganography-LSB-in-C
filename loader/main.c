@@ -186,7 +186,8 @@ void decrypt(int password, int passwordLength, char** argv) {
         message[i] = messageCriptografada[i] - 3;
     }
 
-    printf("\nMENSAGEM DESCRIPTOGRAFADA: %s\n", message);
+    printf("\nMensagem criptografada: %s\n", messageCriptografada);
+    printf("\nMensagem Descriptografada: %s\n", message);
 
     free(message);
     free(messageCriptografada);
