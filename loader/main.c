@@ -1,3 +1,5 @@
+//Alunos: Gustavo Possebon e Bernardo de Cesaro
+
 #include "SOIL.h" // SOIL é a biblioteca para leitura das imagens
 #include <stdio.h> //Para manipular a entrada e saida em geral
 #include <stdlib.h> //Para usar biblioteca de proposito geral da linguagem
@@ -44,14 +46,14 @@ void load(char* name, Img* pic) {
     printf("\n");
 }
 
-//Verifica se o bit é 0 ou 1
+//Verifica se o bit é o bit desejado
 int testbit(int bit, int oi){
     if(((bit >> oi) & 0x01) == 0)
         return 0;
     return 1;
 }
 
-//Substitui o bit 
+//Substitui o bit
 unsigned int setbit(Img pic, int bit)
 {
 	unsigned int vueP = pic.img[pos].b;
@@ -61,7 +63,7 @@ unsigned int setbit(Img pic, int bit)
 //Transforma a posição do pos do pic em hexadecimal
 unsigned int toLetter(Img pic){
 	unsigned int vueP = pic.img[pos].b;
-    if((vueP >> 0) & 0x01) 
+    if((vueP >> 0) & 0x01)
         return 1;
     return 0;
 }
@@ -82,36 +84,46 @@ void blink(char* password) {
     hell /= strlen(password);
     pos += hell;
 }
+
 // Método para codificar a mensagem na imagem
 void encrypt(int password, char text[], int argc, char** argv) {
 
-    char gurupiMessage[350]; // Vetor para auxiliar da mensagem codificada
-    char nowLetter; // Armazena o caractere atual da mensagem
     Img pic; // Cria uma variavel pic da struct Img
-
-    printf("\n");
-    printf("----------ENCRIPTANDO IMAGEM----------\n");
-    printf("\n");
-    /*
-    O princípio utilizado será que o caractere atual vai se transformar em um caractere a mais (+1) 
-    e será alocado na mesma posição so que no vetor da mensagem criptografada
-    */ 
-    for(int i = 0; i < strlen(text); i++) {
-        nowLetter = text[i];
-        gurupiMessage[i] = nowLetter + 1;
-    }
-
     if(argc < 1) { //verifica se o argumento é invalido
-        printf("loader [img]\n"); 
-        exit(1); 
+        printf("loader [img]\n");
+        exit(1);
     }
 
     load(argv[1], &pic); //carrega a saida no pic
+    char gurupiMessage[350]; // Vetor para auxiliar da mensagem codificada
+    char nowLetter; // Armazena o caractere atual da mensagem
+
+
+    printf("\n");
+    printf("----------IMAGEM CRIPTOGRAFADA----------\n");
+    printf("\n");
+    /*
+    O princípio utilizado será que o caractere atual vai se transformar em um caractere a mais (+1)
+    e será alocado na mesma posição so que no vetor da mensagem criptografada
+    */
+    for(int i = 0; i < strlen(text); i++) {
+        nowLetter = text[i];
+        gurupiMessage[i] = nowLetter + 2;
+    }
+
+    // printf("\nPixels da imagem anterior a criptografia:\n");
+    // for(int i = 1; i <= 8*strlen(text); i++) {
+    //     printf("[%02X %02X %02X] ", pic.img[i].r, pic.img[i].g, pic.img[i].b);
+    //     if(i % 4 == 0) {
+    //         printf("\n");
+    //     }
+    // }
+    // printf("\n");
 
     //pegando bit a bit do caracter...
     for(int i = 0; i < strlen(gurupiMessage); i++) {
-        nowLetter = gurupiMessage[i]; //pega o char da posição na mensagem codificada 
-    
+        nowLetter = gurupiMessage[i]; //pega o char da posição na mensagem codificada
+
         bit8 = testbit(nowLetter,7);
         bit7 = testbit(nowLetter,6);
         bit6 = testbit(nowLetter,5);
@@ -121,7 +133,7 @@ void encrypt(int password, char text[], int argc, char** argv) {
         bit2 = testbit(nowLetter,1);
         bit1 = testbit(nowLetter,0);
 
-        //executa 7 vezes 
+        //executa 7 vezes
         for(int j = 0; j < 8; j++) {
             switch(j) {
                 //pega cada posição substitui o bit para o que quer e depois pula
@@ -164,6 +176,15 @@ void encrypt(int password, char text[], int argc, char** argv) {
         }
 
     }
+
+    // printf("\nPixels da imagem apos criptografia:\n");
+    // for(int i = 1; i <= 8*strlen(gurupiMessage); i++) {
+    //     printf("[%02X %02X %02X] ", pic.img[i].r, pic.img[i].g, pic.img[i].b+2);
+    //     if(i % 4 == 0) {
+    //         printf("\n");
+    //     }
+    // }
+    // printf("\n\n");
 
     // Resetando os bits para 0
     bit8 = clearbit(bit8);
@@ -217,7 +238,7 @@ void decrypt(int password, int textTam, char** argv) {
 
     //Vai descriptografando cara posição do vetor criptografado e volta ao normal
     for(int i=0; i<strlen(textSteo); i++){
-        text[i] = textSteo[i] - 1;
+        text[i] = textSteo[i] - 2;
     }
     printf("\nMensagem criptografada: %s\n", textSteo);
     printf("\nMensagem descriptografada: %s\n", text);
@@ -230,7 +251,7 @@ void decrypt(int password, int textTam, char** argv) {
 
 int main(int argc, char** argv) {
     char sentence[250]; //frase digitada pelo usuário
-    char password[50]; //senha original 
+    char password[50]; //senha original
     char newPassoword[50]; //senha para descriptografar
     char c,d,f;
     int i = 0;
