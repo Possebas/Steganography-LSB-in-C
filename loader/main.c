@@ -1,29 +1,37 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h> // Para usar strings
 #include "SOIL.h" // SOIL é a biblioteca para leitura das imagens
+#include <stdio.h> //Para manipular a entrada e saida em geral
+#include <stdlib.h> //Para usar biblioteca de proposito geral da linguagem
+#include <string.h> // Para usar biblioteca strings
 
-// Um pixel RGB
+
+// Um pixel RGB composto por r, g e b.
 typedef struct {
     unsigned char r, g, b;
 } RGB;
 
-// Uma imagem em RGB
+// Uma imagem em RGB composto por altura e largura, e um array de pixels
 typedef struct {
     int width, height;
-    RGB* img; //array de pixels
+    RGB* img;
 } Img;
 
-// Responsável pelo controle do index dos pixels da imagem
-int cont = 0;
+// Controlar o índice dos pixels de Img
+int pos = 0;
+
+// Inicialização dos chars bits onde serão manipulados
 char bit1, bit2, bit3, bit4, bit5, bit6, bit7, bit8 = 0;
 
 // Protótipos
 void load(char* name, Img* pic);
-void salta(char* password);
-void encrypt(int password, char message[], int argc, char** argv);
-void decrypt(int password, int passwordLength, char** argv);
+void blink(char* password);
+void encrypt(int password, char text[], int argc, char** argv);
+int testbit(int bit, int oi);
+unsigned int setbit(Img pic, int bit);
+unsigned int toLetter(Img pic);
+unsigned int clearbit(int bit);
+void decrypt(int password, int textTam, char** argv);
 
+// Métodos implementados
 // Carrega uma imagem para a struct Img
 void load(char* name, Img* pic) {
     int chan;
@@ -36,92 +44,118 @@ void load(char* name, Img* pic) {
     printf("\n");
 }
 
-// Algoritmo de salto entre pixels
-void salta(char* password) {
-    int salto = 0;
-    for(int i=0; i<strlen(password); i++) {
-        salto += password[i];
-    }
-
-    salto /= strlen(password);
-
-    cont += salto;
+//Verifica se o bit é 0 ou 1
+int testbit(int bit, int oi){
+    if(((bit >> oi) & 0x01) == 0)
+        return 0;
+    return 1;
 }
 
-void encrypt(int password, char message[], int argc, char** argv) {
+//Substitui o bit 
+unsigned int setbit(Img pic, int bit)
+{
+	unsigned int vueP = pic.img[pos].b;
+	return ((vueP << 1) | bit);
+}
 
-    // Armazena a mensagem apos a cifra de Cesar
-    char mensagemCriptografada[348];
+//Transforma a posição do pos do pic em hexadecimal
+unsigned int toLetter(Img pic){
+	unsigned int vueP = pic.img[pos].b;
+    if((vueP >> 0) & 0x01) 
+        return 1;
+    return 0;
+}
+
+//Limpa o bit enviado
+unsigned int clearbit(int bit)
+{
+    return 0 & ~(1 << bit);
+}
+
+
+// Executar saltos entre os pixels
+void blink(char* password) {
+    int hell = 0;
+    for(int i=0; i<strlen(password); i++) {
+        hell += password[i];
+    }
+    hell /= strlen(password);
+    pos += hell;
+}
+// Método para codificar a mensagem na imagem
+void encrypt(int password, char text[], int argc, char** argv) {
+
+    char gurupiMessage[350]; // Vetor para auxiliar da mensagem codificada
+    char nowLetter; // Armazena o caractere atual da mensagem
+    Img pic; // Cria uma variavel pic da struct Img
 
     printf("\n");
     printf("----------ENCRIPTANDO IMAGEM----------\n");
     printf("\n");
-
-    // Armazena o caractere atual da mensagem
-    char caractereAtual;
-
-    // AUMENTANDO 3 LETRAS NO ALFABETO PARA CADA LETRA DA MENSAGEM (CRIPTOGRAFANDO COM CIFRA DE CESAR).
-    for(int i = 0; i < strlen(message); i++) {
-        caractereAtual = message[i];
-        mensagemCriptografada[i] = caractereAtual + 3;
+    /*
+    O princípio utilizado será que o caractere atual vai se transformar em um caractere a mais (+1) 
+    e será alocado na mesma posição so que no vetor da mensagem criptografada
+    */ 
+    for(int i = 0; i < strlen(text); i++) {
+        nowLetter = text[i];
+        gurupiMessage[i] = nowLetter + 1;
     }
 
-    // Carrega a imagem em pic
-    Img pic;
-
-    if(argc < 1) {
-        printf("loader [img]\n");
-        exit(1);
+    if(argc < 1) { //verifica se o argumento é invalido
+        printf("loader [img]\n"); 
+        exit(1); 
     }
 
-    load(argv[1], &pic);
+    load(argv[1], &pic); //carrega a saida no pic
 
-    for(int i = 0; i < strlen(mensagemCriptografada); i++) {
-        caractereAtual = mensagemCriptografada[i];
+    //pegando bit a bit do caracter...
+    for(int i = 0; i < strlen(gurupiMessage); i++) {
+        nowLetter = gurupiMessage[i]; //pega o char da posição na mensagem codificada 
+    
+        bit8 = testbit(nowLetter,7);
+        bit7 = testbit(nowLetter,6);
+        bit6 = testbit(nowLetter,5);
+        bit5 = testbit(nowLetter,4);
+        bit4 = testbit(nowLetter,3);
+        bit3 = testbit(nowLetter,2);
+        bit2 = testbit(nowLetter,1);
+        bit1 = testbit(nowLetter,0);
 
-        //pegando bit a bit do caracter...
-        bit8 = (caractereAtual >> 7) & 0x01;
-        bit7 = (caractereAtual >> 6) & 0x01;
-        bit6 = (caractereAtual >> 5) & 0x01;
-        bit5 = (caractereAtual >> 4) & 0x01;
-        bit4 = (caractereAtual >> 3) & 0x01;
-        bit3 = (caractereAtual >> 2) & 0x01;
-        bit2 = (caractereAtual >> 1) & 0x01;
-        bit1 = (caractereAtual >> 0) & 0x01;
-
+        //executa 7 vezes 
         for(int j = 0; j < 8; j++) {
             switch(j) {
+                //pega cada posição substitui o bit para o que quer e depois pula
                 case 0:
-                    pic.img[cont].r = (pic.img[cont].r << 1) | bit8;
-                    salta(password);
+                    pic.img[pos].b = setbit(pic,bit8);
+                    blink(password);
                     break;
                 case 1:
-                    pic.img[cont].r = (pic.img[cont].r << 1) | bit7;
-                    salta(password);
+                    pic.img[pos].b = setbit(pic,bit7);
+                    blink(password);
                     break;
                 case 2:
-                    pic.img[cont].r = (pic.img[cont].r << 1) | bit6;
-                    salta(password);
+                    pic.img[pos].b = setbit(pic,bit6);
+                    blink(password);
                     break;
                 case 3:
-                    pic.img[cont].r = (pic.img[cont].r << 1) | bit5;
-                    salta(password);
+                    pic.img[pos].b = setbit(pic,bit5);
+                    blink(password);
                     break;
                 case 4:
-                    pic.img[cont].r = (pic.img[cont].r << 1) | bit4;
-                    salta(password);
+                    pic.img[pos].b = setbit(pic,bit4);
+                    blink(password);
                     break;
                 case 5:
-                    pic.img[cont].r = (pic.img[cont].r << 1) | bit3;
-                    salta(password);
+                    pic.img[pos].b = setbit(pic,bit3);
+                    blink(password);
                     break;
                 case 6:
-                    pic.img[cont].r = (pic.img[cont].r << 1) | bit2;
-                    salta(password);
+                    pic.img[pos].b = setbit(pic,bit2);
+                    blink(password);
                     break;
                 case 7:
-                    pic.img[cont].r = (pic.img[cont].r << 1) | bit1;
-                    salta(password);
+                    pic.img[pos].b = setbit(pic,bit1);
+                    blink(password);
                     break;
 
                 default:
@@ -131,79 +165,78 @@ void encrypt(int password, char message[], int argc, char** argv) {
 
     }
 
-    // Limpando bits
-    bit8 = 0;
-    bit7 = 0;
-    bit6 = 0;
-    bit5 = 0;
-    bit4 = 0;
-    bit3 = 0;
-    bit2 = 0;
-    bit1 = 0;
+    // Resetando os bits para 0
+    bit8 = clearbit(bit8);
+    bit7 = clearbit(bit7);
+    bit6 = clearbit(bit6);
+    bit5 = clearbit(bit5);
+    bit4 = clearbit(bit4);
+    bit3 = clearbit(bit3);
+    bit2 = clearbit(bit2);
+    bit1 = clearbit(bit1);
 
     // Salvando imagem criptografada
     SOIL_save_image("saida.bmp", SOIL_SAVE_TYPE_BMP, pic.width, pic.height, 3, pic.img);
 
-    free(pic.img);
+    free(pic.img); //limpa imagem da memória
 }
 
-void decrypt(int password, int passwordLength, char** argv) {
+void decrypt(int password, int textTam, char** argv) {
+
     printf("\n");
     printf("----------DECODIFICANDO IMAGEM----------\n");
     printf("\n");
-    char* message = calloc(300, sizeof message);
-    char* messageCriptografada = calloc(300, sizeof messageCriptografada);
-
-    Img pic;
-    load("saida.bmp", &pic);
-
-    // MONTA A LETRA ATRAVÉS DO BINARIO
-    cont = 0;
+    char* text = calloc(300, sizeof text); //alocar espaço para os itens e retorna um ponteiro
+    char* textSteo = calloc(300, sizeof textSteo); //alocar espaço para os itens e retorna um ponteiro
+    Img pic; // instancia uma variavel da estrutura Imgs
+    load("saida.bmp", &pic); //carrega a saida no pic
+    pos = 0; //reinicia essa variavel
     int contCarac = 0;
-    for(int i = 0; i < passwordLength; i++) {
-        bit8 = (pic.img[cont].r >> 0)  & 0x01;
-        salta(password);
-        bit7 = (pic.img[cont].r >> 0) & 0x01;
-        salta(password);
-        bit6 = (pic.img[cont].r >> 0) & 0x01;
-        salta(password);
-        bit5 = (pic.img[cont].r >> 0) & 0x01;
-        salta(password);
-        bit4 = (pic.img[cont].r >> 0) & 0x01;
-        salta(password);
-        bit3 = (pic.img[cont].r >> 0) & 0x01;
-        salta(password);
-        bit2 = (pic.img[cont].r >> 0) & 0x01;
-        salta(password);
-        bit1 = (pic.img[cont].r >> 0) & 0x01;
-        salta(password);
 
-        messageCriptografada[i] = (bit8 << 7) + (bit7 << 6) + (bit6 << 5) + (bit5 << 4) + (bit4 << 3) + (bit3 << 2) + (bit2 << 1) + (bit1 << 0);
+    //Transforma cada posição desse vetor de pixel a partir do binário em letra
+    for(int i = 0; i < textTam; i++) {
+        bit8 = toLetter(pic);
+        blink(password); // pula posição
+        bit7 = toLetter(pic); //vira letra
+        blink(password);
+        bit6 = toLetter(pic);
+        blink(password);
+        bit5 = toLetter(pic);
+        blink(password);
+        bit4 = toLetter(pic);
+        blink(password);
+        bit3 = toLetter(pic);
+        blink(password);
+        bit2 = toLetter(pic);
+        blink(password);
+        bit1 = toLetter(pic);
+        blink(password);
+
+        textSteo[i] = (bit8 << 7) + (bit7 << 6) + (bit6 << 5) + (bit5 << 4) + (bit4 << 3) + (bit3 << 2) + (bit2 << 1) + (bit1 << 0);
     }
 
-    // REDUZINDO 3 LETRAS NO ALFABETO PARA CADA LETRA DA MENSAGEM (DESCRIPTOGRAFANDO COM CIFRA DE CESAR)
-    for(int i=0; i<strlen(messageCriptografada); i++){
-        message[i] = messageCriptografada[i] - 3;
+    //Vai descriptografando cara posição do vetor criptografado e volta ao normal
+    for(int i=0; i<strlen(textSteo); i++){
+        text[i] = textSteo[i] - 1;
     }
+    printf("\nMensagem criptografada: %s\n", textSteo);
+    printf("\nMensagem descriptografada: %s\n", text);
 
-    printf("\nMensagem criptografada: %s\n", messageCriptografada);
-    printf("\nMensagem Descriptografada: %s\n", message);
-
-    free(message);
-    free(messageCriptografada);
-    free(pic.img);
+    free(text); //limpa da memória
+    free(textSteo); //limpa da memória
+    free(pic.img); //limpa da memória
 }
 
 
 int main(int argc, char** argv) {
-    char sentence [250];
-    char password [50];
-    char newPassoword[50];
+    char sentence[250]; //frase digitada pelo usuário
+    char password[50]; //senha original 
+    char newPassoword[50]; //senha para descriptografar
     char c,d,f;
     int i = 0;
     int g = 0;
     int j = 0;
-    puts("Digite a senha: ");
+    puts("Digite a senha para criptografar: ");
     while ((d = getchar()) != '\n'){
              password[g++] = d;
             }
@@ -214,22 +247,21 @@ int main(int argc, char** argv) {
             }
     sentence[i] = '\0';
     printf("\n\nTamanho da Mensagem: %d \n\n", strlen(sentence) );
-    encrypt(password, sentence, argc, argv);
+
+    encrypt(password, sentence, argc, argv); //chama o método para criptografar a imagem com texto e senha recebidos
+
     puts("Digite a senha para descriptografar: ");
     while ((f = getchar()) != '\n'){
              newPassoword[j++] = f;
             }
     newPassoword[j] = '\0';
+
+    //so executa a primeira senha em todos os caracteres forem iguais aos da segunda senha solicitada
     if (strcmp (password,newPassoword) == 0 )  {
-        printf("\nAs senhas conferem\n");
+        printf("\nAs senhas conferem entao sera decodificado\n");
         decrypt(password, strlen(sentence), argv);
     }
     else{
-        printf("As senhas não conferem então sera decodificado\n");
+        printf("As senhas nao conferem entao sera decodificado\n");
     }
 }
-// }
-//     encrypt("testeSenh@gigante123", "sera que essa merda vai dar bom dessa vez?", argc, argv);
-//     decrypt("testeSenh@gigante123", 42, argv);
-
-// }
