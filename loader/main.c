@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>		// Para usar strings
-
-// SOIL � a biblioteca para leitura das imagens
-#include "SOIL.h"
+#include <string.h> // Para usar strings
+#include "SOIL.h" // SOIL é a biblioteca para leitura das imagens
 
 // Um pixel RGB
 typedef struct {
@@ -16,315 +14,221 @@ typedef struct {
     RGB* img; //array de pixels
 } Img;
 
-int cont = 0; //Responsavel pelo controle do index dos pixels da imagem
+// Responsável pelo controle do index dos pixels da imagem
+int cont = 0;
+char bit1, bit2, bit3, bit4, bit5, bit6, bit7, bit8 = 0;
 
-// Prot�tipos
+// Protótipos
 void load(char* name, Img* pic);
-void encrypt(int password, char mensagem[],int argc, char** argv);
-void decrypt(char string[], int number);
-
-long long decimalBin(int num);
-char* concatena(char* orig, char* extension);
-char* insert_zeros(char* bits);
-char* concatenaBin(char string[]);
-
-int Bin(long long num);
-void pegaLetra(char* bits, char string[]);
-
-void save_to_image(char string[], int key, Img pic, int argc, char** argv);
-void recover_from_image(int key, Img pic);
-
-
-int testbit(unsigned int x, int bit){
-    if((x & (1 << bit)) == 0)
-        return 0;
-    return 1;
-}
-unsigned int setbit(unsigned int x, int bit){
-    return x | (1 << bit);
-}
-
-
+void salta(char* password);
+void encrypt(int password, char message[], int argc, char** argv);
+void decrypt(int password, int passwordLength, char** argv);
 
 // Carrega uma imagem para a struct Img
-void load(char* name, Img* pic)
-{
+void load(char* name, Img* pic) {
     int chan;
-    pic->img = (unsigned char*) SOIL_load_image(name, &pic->width, &pic->height, &chan, SOIL_LOAD_RGB);
-    if(!pic->img)
-    {
+    pic -> img = (unsigned char*) SOIL_load_image(name, &pic -> width, &pic -> height, &chan, SOIL_LOAD_RGB);
+    if(!pic -> img) {
         printf( "SOIL loading error: '%s'\n", SOIL_last_result() );
         exit(1);
     }
-    printf("Dimensoes da imagem: %d x %d x %d\n", pic->width, pic->height, chan);
+    printf("Tamanho da imagem: %d x %d x %d\n", pic->width, pic->height, chan);
+    printf("\n");
 }
 
-long long decimalBin (int num){
-    long long numBinario = 0;
-    int r;
-    int i = 1;
-    int step = 1;
-
-    while (num != 0){
-        r = num % 2;
-        step++;
-        num /= 2;
-        numBinario += r * i;
-        i *= 10;
+// Algoritmo de salto entre pixels
+void salta(char* password) {
+    int salto = 0;
+    for(int i=0; i<strlen(password); i++) {
+        salto += password[i];
     }
-    return numBinario;
+
+    salto /= strlen(password);
+
+    cont += salto;
 }
 
-char* concatena(char* orig, char* extension){
-    char* aux = malloc(strlen(orig) + strlen(extension) + 2);
-    int count = 0;
+void encrypt(int password, char message[], int argc, char** argv) {
 
-    for(int i = 0; i < strlen(orig); i++){
-        if(orig[i] != '\0'){
-            aux[i] = orig[i];
-            count += 1;
-        }
+    // Armazena a mensagem apos a cifra de Cesar
+    char mensagemCriptografada[348];
+
+    printf("\n");
+    printf("----------ENCRIPTANDO IMAGEM----------\n");
+    printf("\n");
+
+    // Armazena o caractere atual da mensagem
+    char caractereAtual;
+
+    // AUMENTANDO 3 LETRAS NO ALFABETO PARA CADA LETRA DA MENSAGEM (CRIPTOGRAFANDO COM CIFRA DE CESAR).
+    for(int i = 0; i < strlen(message); i++) {
+        caractereAtual = message[i];
+        mensagemCriptografada[i] = caractereAtual + 3;
     }
-    for(int i = 0; i < strlen(extension); i++){
-        if (extension[i] != '\0'){
-            aux[count] = extension[i];
-            count += 1;
-        }
-    }
-    aux[count] = '\0';
-    return aux;
-}
 
-void encrypt(int pos, char mensagem[], int argc, char** argv)
-{
-    printf("\n");
-    printf("----------CRIPTOGRAFANDO MENSAGEM----------");
-    printf("\n");
-
-    for(int i = 0; i < strlen(mensagem); i++){
-        char character  = mensagem[i];
-
-        if(character >= 'a' && character <= 'z'){
-            character = character + pos;
-
-            if(character > 'z'){
-                character = character - 'z' + 'a' - 1;
-            }
-
-            mensagem[i] = character;
-        }
-        else if(character >= 'A' && character <= 'Z'){
-            character = character + pos;
-
-            if(character > 'Z'){
-                character = character - 'Z' + 'A' - 1;
-            }
-
-            mensagem[i] = character;
-        }
-    }
-    printf("\n\nTamanho da Mensagem: %d \n\n", strlen(mensagem) );
-    printf("\nMENSAGEM CRIPTOGRAFADA: ");
-    printf("%s\n", mensagem);
-
-    printf("\n");
-    printf("----------ESTEGANOGRAFANDO IMAGEM----------");
-    printf("\n");
-
-    //Carrega a imagem em pic
+    // Carrega a imagem em pic
     Img pic;
+
     if(argc < 1) {
         printf("loader [img]\n");
         exit(1);
     }
+
     load(argv[1], &pic);
 
-    printf("\nPixels da imagem antes da mudanca:\n");
-    for(int i=0; i<8*strlen(mensagem); i++) {
-        printf("[%02X %02X %02X] ", pic.img[i].r +1, pic.img[i].g, pic.img[i].b);
-    }
-    printf("\n\n");
+    for(int i = 0; i < strlen(mensagemCriptografada); i++) {
+        caractereAtual = mensagemCriptografada[i];
 
+        //pegando bit a bit do caracter...
+        bit8 = (caractereAtual >> 7) & 0x01;
+        bit7 = (caractereAtual >> 6) & 0x01;
+        bit6 = (caractereAtual >> 5) & 0x01;
+        bit5 = (caractereAtual >> 4) & 0x01;
+        bit4 = (caractereAtual >> 3) & 0x01;
+        bit3 = (caractereAtual >> 2) & 0x01;
+        bit2 = (caractereAtual >> 1) & 0x01;
+        bit1 = (caractereAtual >> 0) & 0x01;
+
+        for(int j = 0; j < 8; j++) {
+            switch(j) {
+                case 0:
+                    pic.img[cont].r = (pic.img[cont].r << 1) | bit8;
+                    salta(password);
+                    break;
+                case 1:
+                    pic.img[cont].r = (pic.img[cont].r << 1) | bit7;
+                    salta(password);
+                    break;
+                case 2:
+                    pic.img[cont].r = (pic.img[cont].r << 1) | bit6;
+                    salta(password);
+                    break;
+                case 3:
+                    pic.img[cont].r = (pic.img[cont].r << 1) | bit5;
+                    salta(password);
+                    break;
+                case 4:
+                    pic.img[cont].r = (pic.img[cont].r << 1) | bit4;
+                    salta(password);
+                    break;
+                case 5:
+                    pic.img[cont].r = (pic.img[cont].r << 1) | bit3;
+                    salta(password);
+                    break;
+                case 6:
+                    pic.img[cont].r = (pic.img[cont].r << 1) | bit2;
+                    salta(password);
+                    break;
+                case 7:
+                    pic.img[cont].r = (pic.img[cont].r << 1) | bit1;
+                    salta(password);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+    }
+
+    // Limpando bits
+    bit8 = 0;
+    bit7 = 0;
+    bit6 = 0;
+    bit5 = 0;
+    bit4 = 0;
+    bit3 = 0;
+    bit2 = 0;
+    bit1 = 0;
+
+    // Salvando imagem criptografada
     SOIL_save_image("saida.bmp", SOIL_SAVE_TYPE_BMP, pic.width, pic.height, 3, pic.img);
 
     free(pic.img);
 }
 
-int binarioDec(long long num){
-    int numDecimal = 0;
+void decrypt(int password, int passwordLength, char** argv) {
+    printf("\n");
+    printf("----------DECODIFICANDO IMAGEM----------\n");
+    printf("\n");
+    char* message = calloc(300, sizeof message);
+    char* messageCriptografada = calloc(300, sizeof messageCriptografada);
+
+    Img pic;
+    load("saida.bmp", &pic);
+
+    // MONTA A LETRA ATRAVÉS DO BINARIO
+    cont = 0;
+    int contCarac = 0;
+    for(int i = 0; i < passwordLength; i++) {
+        bit8 = (pic.img[cont].r >> 0)  & 0x01;
+        salta(password);
+        bit7 = (pic.img[cont].r >> 0) & 0x01;
+        salta(password);
+        bit6 = (pic.img[cont].r >> 0) & 0x01;
+        salta(password);
+        bit5 = (pic.img[cont].r >> 0) & 0x01;
+        salta(password);
+        bit4 = (pic.img[cont].r >> 0) & 0x01;
+        salta(password);
+        bit3 = (pic.img[cont].r >> 0) & 0x01;
+        salta(password);
+        bit2 = (pic.img[cont].r >> 0) & 0x01;
+        salta(password);
+        bit1 = (pic.img[cont].r >> 0) & 0x01;
+        salta(password);
+
+        messageCriptografada[i] = (bit8 << 7) + (bit7 << 6) + (bit6 << 5) + (bit5 << 4) + (bit4 << 3) + (bit3 << 2) + (bit2 << 1) + (bit1 << 0);
+    }
+
+    // REDUZINDO 3 LETRAS NO ALFABETO PARA CADA LETRA DA MENSAGEM (DESCRIPTOGRAFANDO COM CIFRA DE CESAR)
+    for(int i=0; i<strlen(messageCriptografada); i++){
+        message[i] = messageCriptografada[i] - 3;
+    }
+
+    printf("\nMENSAGEM DESCRIPTOGRAFADA: %s\n", message);
+
+    free(message);
+    free(messageCriptografada);
+    free(pic.img);
+}
+
+
+int main(int argc, char** argv) {
+    char sentence [250];
+    char password [50];
+    char newPassoword[50];
+    char c,d,f;
     int i = 0;
-    int r;
-    while (num!=0)
-    {
-        r = num % 10;
-        num /= 10;
-        numDecimal += r * pow(2, i);
-        ++i;
-    }
-    return numDecimal;
-}
-
-void pegaLetra(char* bits, char string[]){
-    int pos = 0;
-    for(int i = 0; i < strlen(bits); i += 8){
-        // get 8 bits from the bit array
-        char aux[9];
-        int count = 0;
-        for(int j = i; j < i + 8; j++){
-            aux[count] = bits[j];
-            count += 1;
-        }
-        aux[count] = '\0';
-
-        // convert the 8 bits to long long
-        long long bin = atol(aux);
-
-
-        //
-        char decimal = (char) binarioDec(bin);
-        string[pos] = decimal;
-        pos += 1;
-    }
-    string[pos] = '\0';
-}
-
-void save_to_image(char string[], int key, Img pic, int argc, char** argv){
-    encrypt(key,string,argc,argv);
-    char* bits = concatenaBin(string);
-    char one = 0x01;
-    for(int i = 0; i < strlen(bits); i++) {
-        if (bits[i] == '1'){
-            pic.img[i].b = pic.img[i].b | one;
-        }
-    }
-}
-void ImageRecover(int key, Img pic){
-    char* bits = "";
-    char aux[9];
-    int count = 0;
-    for(int i = 0; i < sizeof(pic.img);i++){
-
-        aux[count] = testbit(pic.img[i].b, 0);
-
-
-        if (count == 8){
-          
-            aux[count+1] = '\0';
-
-        
-            bits = concatena(bits, aux);
-
-            // restart counter
-            count = 0;
-
-
-            if(binarioDec(atol(aux)) == '\0'){
-                break;
+    int g = 0;
+    int j = 0;
+    puts("Digite a senha: ");
+    while ((d = getchar()) != '\n'){
+             password[g++] = d;
             }
-        }
-        count += 1;
-    }
-
-    char mensagemCripto[strlen(bits)];
-    pegaLetra(bits, mensagemCripto);
-
-    printf("Recovered string = %s", mensagemCripto);
-}
-
-char* insert_zeros(char* bits){
-    int qt_zeros = 8 - strlen(bits);
-    if (qt_zeros == 0){
-        return bits;
-    }
-    else if(qt_zeros < 0){
-        return "erro";
+    password[g] = '\0';
+    puts("Digite a mensagem a ser escondida: ");
+    while ((c = getchar()) != '\n'){
+             sentence[i++] = c;
+            }
+    sentence[i] = '\0';
+    printf("\n\nTamanho da Mensagem: %d \n\n", strlen(sentence) );
+    encrypt(password, sentence, argc, argv);
+    puts("Digite a senha para descriptografar: ");
+    while ((f = getchar()) != '\n'){
+             newPassoword[j++] = f;
+            }
+    newPassoword[j] = '\0';
+    if (strcmp (password,newPassoword) == 0 )  {
+        printf("\nAs senhas conferem\n");
+        decrypt(password, strlen(sentence), argv);
     }
     else{
-        char* aux = malloc(qt_zeros);
-        int count = 0;
-        for(int i = 0; i < qt_zeros; i++){
-            aux[i] = (char) 48;
-            count += 1;
-        }
-        aux[count] = '\0';
-
-        return concatena(aux, bits);
+        printf("As senhas não conferem então sera decodificado\n");
     }
 }
+// }
+//     encrypt("testeSenh@gigante123", "sera que essa merda vai dar bom dessa vez?", argc, argv);
+//     decrypt("testeSenh@gigante123", 42, argv);
 
-char* concatenaBin(char string[]){
-    char* concBin = "";
-
-    for(int i = 0; i< strlen(string); i++){
-        // Converte para bin�rio
-        long long bin = decimalBin(string[i]);
-
-        // Converte o bin�rio para um array de char
-        char bits[256];
-        sprintf(bits, "%lli", bin); // sprintf sprintf escreve em um buffer de caracteres definido por bits.
-
-        // Vai adicionando 0 at� que complete os 8 bits.
-        char* Adiciona0arr = insert_zeros(bits);
-
-        concBin = concatena(concBin, Adiciona0arr);
-    }
-    return concBin;
-}
-
-void decrypt(char string[], int num){
-    for(int i = 0; i < strlen(string); i++){
-		char character = string[i];
-
-		if(character >= 'a' && character <= 'z'){
-			character = character - num;
-
-			if(character < 'a'){
-				character = character + 'z' - 'a' + 1;
-			}
-
-			string[i] = character;
-		}
-		else if(character >= 'A' && character <= 'Z'){
-			character = character - num;
-
-			if(character < 'A'){
-				character = character + 'Z' - 'A' + 1;
-			}
-
-			string[i] = character;
-		}
-	}
-}
-
-
-int main(int argc, char** argv){
-
-    //Carrega a imagem em pic
-    Img pic;
-    if(argc < 1) {
-        printf("loader [img]\n");
-        exit(1);
-    }
-    load(argv[1], &pic);
-
-     int choice;
-     char string[35];
-     do {
-        printf("1.Criptografar\n2.Decodificar\n3.Sair\n");
-        printf("Opcao: ");
-        scanf("%d", &choice);
-        switch(choice){
-            case 1:
-                printf("Digite a mensagem a ser escondida: ");
-                scanf("%s", string);
-                encrypt(1,string,argc,argv);
-                break;
-            case 2:
-                decrypt(1, string);
-                break;
-            default:
-                printf("ATE A PROXIMA\n==== EH US GURI ====\n");
-                exit(0);
-}
-}while (choice != 0);
-}
+// }
